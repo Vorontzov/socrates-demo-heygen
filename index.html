@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOCRATES - Case Study Debate Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        /* LAUNCHER OVERLAY STYLES */
+        .launcher-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .launcher-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .launcher-container {
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            margin: auto;
+            max-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .launcher-logo {
+            font-size: 38px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #d946ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+            letter-spacing: -1px;
+            flex-shrink: 0;
+        }
+
+        .launcher-subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 24px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .selection-group {
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            flex-shrink: 0;
+        }
+
+        .selection-group.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .selection-label {
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        /* CARD-BASED SELECTION (like Discussion Questions) */
+        .selection-options {
+            max-height: min(220px, 25vh);
+            overflow-y: auto;
+            padding: 4px;
+            flex-shrink: 1;
+        }
+
+        .selection-options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .selection-options::-webkit-scrollbar-track {
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 4px;
+        }
+
+        .selection-options::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+
+        .selection-options::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+        }
+
+        .selection-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .selection-card:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .selection-card.selected {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            border: 2px solid #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            transform: translateX(4px);
+        }
+
+        .selection-card.selected:hover {
+            transform: translateX(4px) translateY(-2px);
+        }
+
+        .selection-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 6px;
+        }
+
+        .selection-card-description {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .selection-card-badge {
+            display: inline-block;
+            font-size: 11px;
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .selection-card.selected .selection-card-badge {
+            background: rgba(139, 92, 246, 0.3);
+            color: #a78bfa;
+        }
+
+        .launch-button {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 13px 24px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+            margin-bottom: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            flex-shrink: 0;
+            width: 200px;
+        }
+
+        .launch-button.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .launch-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .launch-button:active {
+            transform: translateY(0);
+        }
+
+        .launch-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: translateY(0);
+        }
+
+        /* MAIN APP STYLES */
+        .main-app {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease 0.3s, visibility 0.5s ease 0.3s;
+        }
+
+        .main-app.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            padding: 20px 40px;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .header-badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 16px 40px 20px 40px;
+            height: calc(100vh - 108px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            background: rgba(26, 26, 26, 0.6);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            flex-shrink: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: #b0b0b0;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .avatar-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #agent-container {
+            width: 100%;
+            height: 65vh;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 0 1px rgba(99, 102, 241, 0.2),
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(99, 102, 241, 0.2);
+            background: #1a1a1a;
+            position: relative;
+        }
+
+        #agent-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(99, 102, 241, 0.2);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .sidebar-content {
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            height: 65vh;
+        }
+
+        .sidebar-content.active {
+            display: flex;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+        }
+
+        .card {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #c0c0c0;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .card p {
+            color: #b0b0b0;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .card ul, .card ol {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .card li {
+            color: #b0b0b0;
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+
+        .card li strong {
+            color: #6366f1;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .info-box {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        .info-box .label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-box .value {
+            font-size: 14px;
+            color: #c0c0c0;
+            font-weight: 600;
+        }
+
+        .objective-item {
+            background: rgba(99, 102, 241, 0.05);
+            border-left: 3px solid #6366f1;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .objective-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateX(4px);
+        }
+
+        .question-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .question-card:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .question-card.expanded {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .question-header {
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            user-select: none;
+        }
+
+        .question-title-row {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 8px;
+        }
+
+        .question-card .question {
+            color: #c0c0c0;
+            font-weight: 500;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accordion-arrow {
+            font-size: 12px;
+            color: #8b5cf6;
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .question-card.expanded .accordion-arrow {
+            transform: rotate(90deg);
+        }
+
+        .question-card .category {
+            display: inline-block;
+            font-size: 11px;
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            align-self: flex-start;
+        }
+
+        .question-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease;
+            opacity: 0;
+            padding: 0 16px;
+        }
+
+        .question-card.expanded .question-answer {
+            max-height: 1500px;
+            opacity: 1;
+            padding: 0 16px 16px 16px;
+        }
+
+        .question-answer p {
+            color: #a0a0a0;
+            font-size: 12px;
+            line-height: 1.7;
+            margin: 0 0 10px 0;
+        }
+
+        .question-answer ul {
+            color: #a0a0a0;
+            font-size: 12px;
+            line-height: 1.7;
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+
+        .question-answer li {
+            margin-bottom: 6px;
+        }
+
+        .question-answer strong {
+            color: #6366f1;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            #agent-container {
+                height: 55vh;
+            }
+
+            .sidebar-content {
+                height: auto;
+                max-height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .launcher-container {
+                padding: 16px;
+                max-height: calc(100vh - 32px);
+            }
+
+            .launcher-logo {
+                font-size: 30px;
+                margin-bottom: 4px;
+            }
+
+            .launcher-subtitle {
+                font-size: 13px;
+                margin-bottom: 20px;
+            }
+
+            .selection-options {
+                max-height: min(180px, 22vh);
+            }
+
+            .selection-group {
+                margin-bottom: 16px;
+            }
+
+            .launch-button {
+                padding: 12px 20px;
+                font-size: 14px;
+                margin-bottom: 30px;
+                width: 180px;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .launcher-logo {
+                font-size: 32px;
+                margin-bottom: 4px;
+            }
+
+            .launcher-subtitle {
+                font-size: 13px;
+                margin-bottom: 16px;
+            }
+
+            .selection-options {
+                max-height: 20vh;
+            }
+
+            .selection-group {
+                margin-bottom: 12px;
+            }
+
+            .launch-button {
+                margin-bottom: 30px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            #agent-container {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- LAUNCHER OVERLAY -->
+    <div id="launcherOverlay" class="launcher-overlay">
+        <div class="launcher-container">
+            <div class="launcher-logo">SOCRATES</div>
+            <div class="launcher-subtitle">Strategic Debate Training Platform</div>
+
+            <!-- Step 1: Case Study Selection -->
+            <div id="caseStudyGroup" class="selection-group visible">
+                <div class="selection-label">Select Case Study</div>
+                <div class="selection-options">
+                    <div class="selection-card" onclick="selectCaseStudy('eli-lilly', this)">
+                        <div class="selection-card-title">Eli Lilly CSR Dilemma</div>
+                        <div class="selection-card-description">
+                            Pharmaceutical company faces strategic decision between expanding MDR-TB treatment or global diabetes programs in 2003.
+                        </div>
+                        <span class="selection-card-badge">2003 • CSR Strategy</span>
+                    </div>
+                    <!-- Future case studies can be added here as additional selection-card divs -->
+                </div>
+            </div>
+
+            <!-- Step 2: Debate Perspective Selection (Hidden initially) -->
+            <div id="perspectiveGroup" class="selection-group">
+                <div class="selection-label">Select Your Debate Perspective</div>
+                <div class="selection-options">
+                    <div class="selection-card" onclick="selectPerspective('diabetes', this)">
+                        <div class="selection-card-title">Debate for Diabetes Medicine</div>
+                        <div class="selection-card-description">
+                            You argue FOR diabetes expansion. The agent will challenge you by advocating for MDR-TB commitment.
+                        </div>
+                        <span class="selection-card-badge">Business Alignment</span>
+                    </div>
+                    <div class="selection-card" onclick="selectPerspective('mdrtb', this)">
+                        <div class="selection-card-title">Debate for MDR-TB Medicine</div>
+                        <div class="selection-card-description">
+                            You argue FOR MDR-TB commitment. The agent will challenge you by advocating for diabetes expansion.
+                        </div>
+                        <span class="selection-card-badge">Humanitarian Leadership</span>
+                    </div>
+                    <div class="selection-card" onclick="selectPerspective('freestyle', this)">
+                        <div class="selection-card-title">Freestyle Debate (Advanced)</div>
+                        <div class="selection-card-description">
+                            Explore multiple strategic pathways. The agent will challenge single-option thinking and advocate for portfolio strategies.
+                        </div>
+                        <span class="selection-card-badge">Strategic Flexibility</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Launch Button (Hidden until both selections made) -->
+            <button id="launchButton" class="launch-button" onclick="launchDebate()" disabled>
+                Launch Debate →
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP (Hidden initially) -->
+    <div id="mainApp" class="main-app">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo">SOCRATES</div>
+                    <div class="subtitle" id="headerSubtitle">Interactive Edition</div>
+                </div>
+                <div class="header-badge" id="headerBadge">🎓 DEBATE</div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchSidebar('quick-reference')">📖 Quick Reference</button>
+                <button class="tab" onclick="switchSidebar('objectives')">🎯 Learning Objectives</button>
+                <button class="tab" onclick="switchSidebar('questions')">💡 Discussion Questions</button>
+                <button class="tab" onclick="switchSidebar('resources')">📚 Resources</button>
+            </div>
+
+            <div class="main-grid">
+                <!-- Avatar Section -->
+                <div class="avatar-section">
+                    <div id="agent-container">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div class="loading-text">Loading Interactive Avatar...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar with Tabbed Content -->
+                <div class="sidebar">
+                    <!-- Quick Reference (Default) -->
+                    <div id="quick-reference" class="sidebar-content active">
+                        <div class="card">
+                            <h2>📖 Quick Reference</h2>
+                            
+                            <div class="info-grid">
+                                <div class="info-box">
+                                    <div class="label">Year</div>
+                                    <div class="value">2003</div>
+                                </div>
+                                <div class="info-box">
+                                    <div class="label">CEO</div>
+                                    <div class="value">Sidney Taurel</div>
+                                </div>
+                                <div class="info-box">
+                                    <div class="label">Revenue</div>
+                                    <div class="value">$11.54B</div>
+                                </div>
+                                <div class="info-box">
+                                    <div class="label">Decision Type</div>
+                                    <div class="value">CSR Strategy</div>
+                                </div>
+                            </div>
+
+                            <h3>The Decision</h3>
+                            <p><strong>Option A: MDR-TB Initiative</strong></p>
+                            <ul>
+                                <li>Expand Green Light Committee partnership</li>
+                                <li>Build new manufacturing facilities</li>
+                                <li>Address crisis killing 8,000 daily</li>
+                                <li>Anti-infectives sales declining 23%</li>
+                            </ul>
+
+                            <p style="margin-top: 12px;"><strong>Option B: Diabetes Programs</strong></p>
+                            <ul>
+                                <li>Leverage core competence (since 1923)</li>
+                                <li>$2.13B existing diabetes revenues</li>
+                                <li>Market growing to 300M patients by 2025</li>
+                                <li>86% insulin market share</li>
+                            </ul>
+
+                            <h3>Your Debate Role</h3>
+                            <p id="debateRoleDescription">Select your perspective to begin the strategic debate.</p>
+                        </div>
+                    </div>
+
+                    <!-- Learning Objectives -->
+                    <div id="objectives" class="sidebar-content">
+                        <div class="card">
+                            <h2>🎯 Learning Objectives</h2>
+                            <p>By the end of this case study, students should be able to:</p>
+
+                            <h3>Strategic Analysis</h3>
+                            <div class="objective-item">
+                                <strong>1.</strong> Analyze complex strategic decisions involving multiple stakeholder interests
+                            </div>
+                            <div class="objective-item">
+                                <strong>2.</strong> Evaluate strategic fit between CSR initiatives and core business strategy
+                            </div>
+                            <div class="objective-item">
+                                <strong>3.</strong> Assess financial and reputational implications of strategic choices
+                            </div>
+
+                            <h3>Corporate Social Responsibility</h3>
+                            <div class="objective-item">
+                                <strong>4.</strong> Understand the role and strategic value of CSR programs
+                            </div>
+                            <div class="objective-item">
+                                <strong>5.</strong> Evaluate benefits corporations should expect from CSR campaigns
+                            </div>
+                            <div class="objective-item">
+                                <strong>6.</strong> Analyze tension between profit maximization and social responsibility
+                            </div>
+
+                            <h3>Industry Context</h3>
+                            <div class="objective-item">
+                                <strong>7.</strong> Understand pharmaceutical industry dynamics and patent law
+                            </div>
+                            <div class="objective-item">
+                                <strong>8.</strong> Recognize challenges of operating in developing markets
+                            </div>
+                            <div class="objective-item">
+                                <strong>9.</strong> Apply lessons from HIV/AIDS crisis to future CSR decisions
+                            </div>
+
+                            <h3>Ethical Reasoning</h3>
+                            <div class="objective-item">
+                                <strong>10.</strong> Identify ethical dilemmas in pharmaceutical pricing and access
+                            </div>
+                            <div class="objective-item">
+                                <strong>11.</strong> Consider multiple moral perspectives on corporate responsibilities
+                            </div>
+                            <div class="objective-item">
+                                <strong>12.</strong> Develop recommendations balancing business and humanitarian concerns
+                            </div>
+
+                            <h3>Stakeholder Management</h3>
+                            <div class="objective-item">
+                                <strong>13.</strong> Identify key stakeholders and their competing interests
+                            </div>
+                            <div class="objective-item">
+                                <strong>14.</strong> Evaluate how stakeholders would view each strategic option
+                            </div>
+                            <div class="objective-item">
+                                <strong>15.</strong> Develop communication strategies for justifying decisions
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discussion Questions -->
+                    <div id="questions" class="sidebar-content">
+                        <div class="card">
+                            <h2>💡 Discussion Questions</h2>
+                            <p>Use these questions to guide your exploration with the avatar:</p>
+
+                            <h3>Opening Questions</h3>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What was Eli Lilly's CSR dilemma in 2003?
+                                        </div>
+                                        <span class="category">Context</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p>In 2003, Eli Lilly faced a critical strategic decision between two major CSR initiatives:</p>
+                                    <ul>
+                                        <li><strong>Deepen MDR-TB Commitment:</strong> Continue supporting WHO's Green Light Committee to combat multi-drug-resistant tuberculosis, which kills 8,000 people daily. Required building new manufacturing plants with unclear ROI.</li>
+                                        <li><strong>Expand Global Diabetes Programs:</strong> Scale up programs like the Ghana pilot and "Life for a Child" initiative, leveraging Lilly's core competency in diabetes ($2.13B revenue, 86% US insulin market share).</li>
+                                    </ul>
+                                    <p>The dilemma balanced <strong>humanitarian leadership vs. core business alignment</strong> amid industry-wide criticism of pharmaceutical pricing.</p>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            Who is Sidney Taurel and what challenges did he face?
+                                        </div>
+                                        <span class="category">Leadership</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Sidney Taurel</strong> was CEO and Chairman of Eli Lilly in 2003, leading the company during turbulent times:</p>
+                                    <ul>
+                                        <li><strong>Financial pressure:</strong> Prozac patent expiration caused sales to drop, requiring new growth strategies</li>
+                                        <li><strong>Industry criticism:</strong> Pharmaceutical companies faced lawsuits and public anger over drug pricing (e.g., 39-company South Africa lawsuit)</li>
+                                        <li><strong>Innovation imperative:</strong> Only 153 of 1,035 new drugs (1989-2000) were truly innovative; industry R&D questioned</li>
+                                        <li><strong>Moral conviction:</strong> Taurel believed "we do have a moral responsibility" to save lives, creating tension between ethics and shareholder returns</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            Why was the pharmaceutical industry under fire?
+                                        </div>
+                                        <span class="category">Industry</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p>The pharmaceutical industry faced mounting criticism on multiple fronts:</p>
+                                    <ul>
+                                        <li><strong>Drug pricing:</strong> HIV/AIDS drugs priced at $10,000+ per year were unaffordable in developing countries; 39 companies sued South Africa over generic production</li>
+                                        <li><strong>Patent enforcement:</strong> WTO TRIPS agreement (1995) required developing countries to enforce drug patents, blocking access to cheap generics</li>
+                                        <li><strong>R&D priorities:</strong> Critics argued pharma focused on "me-too" drugs and lifestyle medications instead of life-threatening diseases</li>
+                                        <li><strong>Medicare debates:</strong> US seniors faced high drug costs; political pressure for price controls increased</li>
+                                        <li><strong>Public perception:</strong> Seen as prioritizing profits over lives, especially in global health crises</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <h3>Strategic Analysis</h3>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What are the pros and cons of the MDR-TB initiative?
+                                        </div>
+                                        <span class="category">Strategy</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>PROS:</strong></p>
+                                    <ul>
+                                        <li><strong>Humanitarian impact:</strong> Addresses 8,000 deaths/day; 400,000 MDR-TB cases annually</li>
+                                        <li><strong>Scientific differentiation:</strong> Capreomycin and cycloserine are complex fermentation products with no viable generic competitors</li>
+                                        <li><strong>Partnership credibility:</strong> Builds on proven WHO GLC success in Chile, Peru, Philippines</li>
+                                        <li><strong>Regulatory goodwill:</strong> "CSR helps us dramatically with our regulators" (Pfizer Chairman)</li>
+                                        <li><strong>Industry competitiveness:</strong> Matches Novartis Singapore center, GSK $200M Spain facility</li>
+                                    </ul>
+                                    <p><strong>CONS:</strong></p>
+                                    <ul>
+                                        <li><strong>Major CapEx:</strong> Requires tens of millions for new plant construction</li>
+                                        <li><strong>Declining sales:</strong> Anti-infectives sales dropped 23% to $577M (2002)</li>
+                                        <li><strong>Uncertain ROI:</strong> Drugs supplied at ~1% market price to WHO; minimal revenue</li>
+                                        <li><strong>Manufacturing complexity:</strong> 2001 FDA shutdowns exposed fermentation risks</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What are the pros and cons of diabetes programs?
+                                        </div>
+                                        <span class="category">Strategy</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>PROS:</strong></p>
+                                    <ul>
+                                        <li><strong>Core competency:</strong> $2.13B diabetes revenue; 86% US insulin market share</li>
+                                        <li><strong>Growth trajectory:</strong> Diabetes population projected to double (150M → 300M by 2025)</li>
+                                        <li><strong>Strong margins:</strong> EBITDA 36.3%, ROE 42.3%</li>
+                                        <li><strong>CEO alignment:</strong> Taurel's focus on chronic conditions</li>
+                                        <li><strong>Proven model:</strong> $1M Ghana pilot; IDF partnerships; "Life for a Child" program ($365/child/year)</li>
+                                        <li><strong>Low incremental cost:</strong> Leverages existing products and distribution</li>
+                                    </ul>
+                                    <p><strong>CONS:</strong></p>
+                                    <ul>
+                                        <li><strong>Less urgent crisis:</strong> Not an 8,000 deaths/day emergency like MDR-TB</li>
+                                        <li><strong>Infrastructure challenges:</strong> Requires refrigeration, patient compliance</li>
+                                        <li><strong>Competitive:</strong> Multiple pharma companies in diabetes space</li>
+                                        <li><strong>Moderate PR impact:</strong> Less dramatic than infectious disease leadership</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            Which option better aligns with Lilly's core strategy?
+                                        </div>
+                                        <span class="category">Strategic Fit</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Diabetes programs show stronger strategic alignment:</strong></p>
+                                    <ul>
+                                        <li><strong>Revenue focus:</strong> 2 of 6 growth products are diabetes drugs; represents 18% of total sales</li>
+                                        <li><strong>CEO priority:</strong> Taurel explicitly focuses on chronic conditions, not infectious disease</li>
+                                        <li><strong>Market growth:</strong> Expanding diabetes population creates long-term business opportunity</li>
+                                        <li><strong>Low risk:</strong> No plant construction; leverages existing manufacturing and supply chains</li>
+                                        <li><strong>Profitability:</strong> High margins support both business returns and CSR investment</li>
+                                    </ul>
+                                    <p><strong>However, MDR-TB offers differentiation:</strong></p>
+                                    <ul>
+                                        <li><strong>Heritage:</strong> Lilly's historical strength in anti-infectives (penicillin, erythromycin)</li>
+                                        <li><strong>Scientific moat:</strong> Complex fermentation expertise few competitors possess</li>
+                                        <li><strong>Reputational leadership:</strong> More dramatic humanitarian positioning vs. competitors</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <h3>Financial Impact</h3>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What are the financial implications of MDR-TB?
+                                        </div>
+                                        <span class="category">Finance</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>High upfront costs, minimal revenue:</strong></p>
+                                    <ul>
+                                        <li><strong>CapEx burden:</strong> Tens of millions required for new manufacturing facilities</li>
+                                        <li><strong>Pricing reality:</strong> Drugs supplied to WHO at ~1% of market price; negligible revenue contribution</li>
+                                        <li><strong>Declining segment:</strong> Anti-infectives sales fell 23% (2001-2002), down to $577M from peak</li>
+                                        <li><strong>Idle capacity utilization:</strong> Could repurpose existing fermentation plants, reducing incremental cost</li>
+                                        <li><strong>Intangible benefits:</strong> Regulatory goodwill, brand equity, employee morale (hard to quantify)</li>
+                                        <li><strong>Risk exposure:</strong> Manufacturing complexity (2001 FDA shutdowns) creates compliance liability</li>
+                                    </ul>
+                                    <p><strong>Net impact:</strong> Significant CSR investment (~$251M annual budget could absorb some cost) with strategic, not financial, returns.</p>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What is the business case for diabetes programs?
+                                        </div>
+                                        <span class="category">Business Case</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Strong financial and strategic alignment:</strong></p>
+                                    <ul>
+                                        <li><strong>Revenue opportunity:</strong> $2.13B current diabetes sales (18% of total); projected market doubling by 2025 (150M → 300M patients)</li>
+                                        <li><strong>High profitability:</strong> EBITDA margin 36.3%, ROE 42.3% support both growth and CSR funding</li>
+                                        <li><strong>Low incremental cost:</strong> Ghana pilot ran $1M over 4 years; "Life for a Child" costs $365/child/year</li>
+                                        <li><strong>Market expansion:</strong> Building awareness in developing markets creates future customer base as economies grow</li>
+                                        <li><strong>Brand halo effect:</strong> Strengthens Lilly's diabetes leadership positioning globally</li>
+                                        <li><strong>Risk mitigation:</strong> No new manufacturing; leverages existing supply chains and partner networks (140 alliances)</li>
+                                    </ul>
+                                    <p><strong>ROI potential:</strong> CSR investment doubles as market development, with measurable patient outcomes justifying continued funding.</p>
+                                </div>
+                            </div>
+
+                            <h3>Stakeholder Perspectives</h3>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            How would shareholders view each option?
+                                        </div>
+                                        <span class="category">Stakeholders</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Shareholder priorities (ROE 42.3%, seeking growth after Prozac patent loss):</strong></p>
+                                    <ul>
+                                        <li><strong>Favor diabetes:</strong> Aligns with growth strategy; leverages core competency; expanding market; visible ROI path</li>
+                                        <li><strong>Skeptical of MDR-TB:</strong> Major CapEx in declining segment; minimal revenue; uncertain strategic payoff; manufacturing risk</li>
+                                        <li><strong>CSR tolerance:</strong> $251M annual philanthropy (7.22% of pre-tax profits) sets precedent; shareholders accept reasonable CSR spending</li>
+                                        <li><strong>Reputation hedge:</strong> May support MDR-TB if positioned as protecting regulatory relationships and brand value vs. industry criticism</li>
+                                    </ul>
+                                    <p><strong>Likely verdict:</strong> Diabetes seen as "smart CSR" (business + ethics); MDR-TB requires compelling non-financial case.</p>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What would patients in developing countries want?
+                                        </div>
+                                        <span class="category">Stakeholders</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Depends on disease burden and urgency:</strong></p>
+                                    <ul>
+                                        <li><strong>MDR-TB patients:</strong> Facing imminent death (8,000 daily); desperate for treatment access; capreomycin/cycloserine are life-saving; demand immediate action</li>
+                                        <li><strong>Diabetes patients:</strong> Chronic condition requiring long-term management; equally desperate but different urgency; need sustained insulin supply, refrigeration, education</li>
+                                        <li><strong>Infrastructure reality:</strong> Both face barriers—TB needs DOTS compliance; diabetes needs cold chain, monitoring, lifestyle change</li>
+                                        <li><strong>Economic access:</strong> Both groups lack ability to pay Western prices; rely on public health systems, NGOs, donation programs</li>
+                                    </ul>
+                                    <p><strong>Patient voice:</strong> "Any help is better than none"—but TB patients face existential crisis now; diabetes patients seek long-term partnership.</p>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            How do NGOs and WHO factor into this decision?
+                                        </div>
+                                        <span class="category">Partnerships</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Critical partners with strong preferences:</strong></p>
+                                    <ul>
+                                        <li><strong>WHO Green Light Committee:</strong> Already partnered with Lilly on MDR-TB; proven model in Chile, Peru, Philippines; urgently needs scaled production; would champion deeper commitment</li>
+                                        <li><strong>International Diabetes Federation (IDF):</strong> Partnered on Ghana pilot; advocates for global diabetes access; supports expansion but less urgent crisis framing</li>
+                                        <li><strong>Médecins Sans Frontières (MSF):</strong> Vocal on drug access; would applaud either but favor MDR-TB given acute mortality and Lilly's unique production capability</li>
+                                        <li><strong>Partnership leverage:</strong> Lilly operates 140 alliances; NGO/WHO endorsement amplifies CSR credibility and provides implementation infrastructure</li>
+                                    </ul>
+                                    <p><strong>Political capital:</strong> WHO/NGO support shields from pricing criticism; positions Lilly as "partner of choice" vs. lawsuit-prone competitors.</p>
+                                </div>
+                            </div>
+
+                            <h3>Ethical Considerations</h3>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What are the ethical dimensions of this case?
+                                        </div>
+                                        <span class="category">Ethics</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>Fundamental tensions between ethical frameworks:</strong></p>
+                                    <ul>
+                                        <li><strong>Utilitarian view:</strong> Maximize lives saved—MDR-TB addresses 8,000 deaths/day (immediate impact); diabetes prevents long-term suffering (broader reach)</li>
+                                        <li><strong>Duty-based ethics:</strong> Lilly has unique capability to produce complex TB drugs (moral obligation); also has expertise in diabetes (competing duty)</li>
+                                        <li><strong>Justice/equity:</strong> Poorest patients need both drugs; pricing locks them out; CSR partially corrects market failure but can't solve systemic access crisis</li>
+                                        <li><strong>Stakeholder theory:</strong> Balance shareholder returns, patient needs, employee values, regulatory relationships—no option satisfies all</li>
+                                        <li><strong>Virtue ethics:</strong> What would a "good" pharmaceutical company do? Heritage of discovery (Colonel Lilly's mass-production of insulin) vs. modern profit pressures</li>
+                                    </ul>
+                                    <p><strong>Core question:</strong> Is pharma's primary obligation to shareholders or society? Taurel's "moral responsibility" challenges shareholder primacy doctrine.</p>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            Should pharma prioritize profit or access?
+                                        </div>
+                                        <span class="category">Ethics</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>The central ethical debate of pharmaceutical business:</strong></p>
+                                    <p><strong>PROFIT PRIORITY (Shareholder primacy view):</strong></p>
+                                    <ul>
+                                        <li>High R&D costs (~$800M per new drug) require revenue to sustain innovation</li>
+                                        <li>Profits fund future drug discovery; "no margin, no mission"</li>
+                                        <li>Patent protection incentivizes risk-taking; without IP, innovation stalls</li>
+                                        <li>Market mechanisms drive efficiency; governments/NGOs should fund access</li>
+                                    </ul>
+                                    <p><strong>ACCESS PRIORITY (Social obligation view):</strong></p>
+                                    <ul>
+                                        <li>Health is a human right; life-saving drugs shouldn't be priced out of reach</li>
+                                        <li>Pharma benefits from public R&D (NIH funding); owes society return</li>
+                                        <li>Tiered pricing/licensing allows profit in rich markets + access in poor markets</li>
+                                        <li>Industry reputation collapse threatens long-term sustainability (see HIV/AIDS lawsuit backlash)</li>
+                                    </ul>
+                                    <p><strong>Middle ground:</strong> "Shared value" model—CSR programs that build markets, reputation, and relationships while serving unmet medical needs. Both diabetes and MDR-TB fit this, but with different risk/reward profiles.</p>
+                                </div>
+                            </div>
+
+                            <h3>Recommendation</h3>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            What would you recommend to Sidney Taurel and why?
+                                        </div>
+                                        <span class="category">Decision</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>This is YOUR decision to defend in debate! Consider:</strong></p>
+                                    <p><strong>If recommending Diabetes:</strong></p>
+                                    <ul>
+                                        <li>Strategic alignment with core business and CEO priorities</li>
+                                        <li>Scalable model with measurable ROI and market development potential</li>
+                                        <li>Lower financial risk; leverages existing strengths</li>
+                                        <li>Addresses massive and growing global health need</li>
+                                    </ul>
+                                    <p><strong>If recommending MDR-TB:</strong></p>
+                                    <ul>
+                                        <li>Moral imperative to address 8,000 daily deaths</li>
+                                        <li>Unique competitive advantage in fermentation technology</li>
+                                        <li>Maximum reputational differentiation vs. competitors</li>
+                                        <li>WHO partnership credibility and regulatory goodwill</li>
+                                    </ul>
+                                    <p><strong>Key factors in your decision:</strong> Risk tolerance, time horizon, stakeholder weighting, view of pharma's role in society, belief in CSR as strategic vs. philanthropic.</p>
+                                </div>
+                            </div>
+                            <div class="question-card" onclick="toggleQuestion(this)">
+                                <div class="question-header">
+                                    <div class="question-title-row">
+                                        <div class="question">
+                                            <span class="accordion-arrow">▶</span>
+                                            Could Lilly pursue both options at different scales?
+                                        </div>
+                                        <span class="category">Alternative</span>
+                                    </div>
+                                </div>
+                                <div class="question-answer">
+                                    <p><strong>The "portfolio approach" to CSR:</strong></p>
+                                    <p><strong>FEASIBILITY:</strong></p>
+                                    <ul>
+                                        <li>Lilly's $251M annual CSR budget (7.22% of pre-tax profits) could fund both</li>
+                                        <li>Example split: 60% diabetes ($150M) + 40% MDR-TB ($100M)</li>
+                                        <li>International Aid Unit (Geneva, 1995) already coordinates global programs</li>
+                                        <li>140 existing alliance partnerships provide distribution infrastructure</li>
+                                    </ul>
+                                    <p><strong>ADVANTAGES:</strong></p>
+                                    <ul>
+                                        <li>Hedges strategic bet—gains benefits of both approaches</li>
+                                        <li>Satisfies diverse stakeholders—WHO/NGOs (TB), shareholders (diabetes)</li>
+                                        <li>Builds comprehensive "global health leadership" brand</li>
+                                        <li>Allows learning and scaling winners over time</li>
+                                    </ul>
+                                    <p><strong>RISKS:</strong></p>
+                                    <ul>
+                                        <li>Diluted focus—neither program reaches transformative scale</li>
+                                        <li>MDR-TB still requires major CapEx; can't be done "at half scale"</li>
+                                        <li>Message confusion—lacks narrative clarity vs. single bold bet</li>
+                                    </ul>
+                                    <p><strong>Debate this:</strong> Is "both" strategic wisdom or a failure to choose? Does it maximize impact or minimize it?</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resources -->
+                    <div id="resources" class="sidebar-content">
+                        <div class="card">
+                            <h2>📚 Resources & Background</h2>
+
+                            <h3>Case Study Information</h3>
+                            <p><strong>Title:</strong> Eli Lilly and Company's CSR Dilemma Case A</p>
+                            <p><strong>Authors:</strong> Jerry Kim & Bruce Kogut</p>
+                            <p><strong>Publisher:</strong> Columbia CaseWorks</p>
+                            <p><strong>Year:</strong> 2009-2022</p>
+
+                            <h3>Key Figures & Data</h3>
+                            <p><strong>Eli Lilly (2001-2002):</strong></p>
+                            <ul>
+                                <li>Total sales: $11.54 billion</li>
+                                <li>Diabetes revenues: $2.13 billion</li>
+                                <li>International sales: $4.54 billion</li>
+                                <li>R&D spending: 18-19% of sales</li>
+                                <li>Charitable giving: $251.08 million</li>
+                            </ul>
+
+                            <p><strong>Global Health Data:</strong></p>
+                            <ul>
+                                <li>TB deaths: 8,000 daily</li>
+                                <li>MDR-TB cases: 400,000 of 8 million TB cases annually</li>
+                                <li>Diabetes patients: 150M globally (2003), predicted 300M by 2025</li>
+                            </ul>
+
+                            <p><strong>Treatment Costs:</strong></p>
+                            <ul>
+                                <li>MDR-TB treatment (US): $250,000 per patient</li>
+                                <li>Standard TB treatment: $2,000 per patient</li>
+                                <li>Diabetes care (Ghana pilot): $365 per child/year</li>
+                                <li>Insulin (US retail): $49.84 per 30-day supply (average)</li>
+                                <li>Insulin (Lilly Answers program): $12 per 30-day supply</li>
+                                <li>AIDS treatment (US patented): $10,000 annually</li>
+                                <li>After Accelerating Access: ~$1,000</li>
+                                <li>Generic alternative (Cipla): $600</li>
+                            </ul>
+
+                            <h3>MDR-TB Initiative Details</h3>
+                            <ul>
+                                <li><strong>Target disease:</strong> Multi-drug resistant tuberculosis (8,000 deaths/day)</li>
+                                <li><strong>Lilly drugs:</strong> Capreomycin and cycloserine (complex fermentation products)</li>
+                                <li><strong>Partnership model:</strong> WHO Green Light Committee (GLC) with NGOs</li>
+                                <li><strong>Proven locations:</strong> Chile, Peru, Philippines, Estonia</li>
+                                <li><strong>Pricing:</strong> Supplied to WHO at ~1% of market price</li>
+                                <li><strong>Challenge:</strong> Requires tens of millions in new plant construction</li>
+                                <li><strong>Market context:</strong> Anti-infectives sales declined 23% (2001-2002)</li>
+                            </ul>
+
+                            <h3>Diabetes Initiative Details</h3>
+                            <ul>
+                                <li><strong>Target disease:</strong> Diabetes mellitus (150M patients globally, doubling by 2025)</li>
+                                <li><strong>Lilly position:</strong> 86% US insulin market share; $2.13B revenue (18% of total sales)</li>
+                                <li><strong>Partnership model:</strong> International Diabetes Federation (IDF); local health ministries</li>
+                                <li><strong>Proven location:</strong> Ghana pilot program ($1M over 4 years)</li>
+                                <li><strong>Key program:</strong> "Life for a Child" initiative ($365/child/year)</li>
+                                <li><strong>Advantage:</strong> Leverages existing products, no new manufacturing required</li>
+                                <li><strong>Market context:</strong> 2 of Lilly's 6 growth products are diabetes drugs</li>
+                                <li><strong>Margins:</strong> EBITDA 36.3%, ROE 42.3% support CSR investment</li>
+                            </ul>
+
+                            <h3>Key Concepts & Terms</h3>
+                            <ul>
+                                <li><strong>CSR:</strong> Corporate Social Responsibility</li>
+                                <li><strong>MDR-TB:</strong> Multi-drug resistant tuberculosis</li>
+                                <li><strong>TRIPS:</strong> Trade Related Aspects of Intellectual Property Rights (WTO, 1995)</li>
+                                <li><strong>DOTS-Plus:</strong> Directly Observed Treatment Short-course (TB treatment protocol)</li>
+                                <li><strong>Green Light Committee (GLC):</strong> WHO-led partnership platform (Lilly, NGOs, governments)</li>
+                                <li><strong>Compulsory Licensing:</strong> Government authorization to produce patented drug without permission</li>
+                                <li><strong>IDF:</strong> International Diabetes Federation (global advocacy organization)</li>
+                                <li><strong>Tiered Pricing:</strong> Different drug prices for different markets based on ability to pay</li>
+                                <li><strong>Access Programs:</strong> Patient assistance initiatives (e.g., Lilly Cares, Lilly Answers)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        // Global variables
+        let selectedCaseStudy = '';
+        let selectedPerspective = '';
+        let agentLoaded = false; // Prevent multiple agent loads
+
+        // Step 1: Handle Case Study Selection
+        function selectCaseStudy(caseId, cardElement) {
+            selectedCaseStudy = caseId;
+            
+            // Remove selected class from all case study cards
+            document.querySelectorAll('#caseStudyGroup .selection-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked card
+            cardElement.classList.add('selected');
+            
+            // Show the perspective selection group with fade-in
+            const perspectiveGroup = document.getElementById('perspectiveGroup');
+            setTimeout(() => {
+                perspectiveGroup.classList.add('visible');
+            }, 100);
+        }
+
+        // Step 2: Handle Perspective Selection
+        function selectPerspective(perspective, cardElement) {
+            selectedPerspective = perspective;
+            
+            // Remove selected class from all perspective cards
+            document.querySelectorAll('#perspectiveGroup .selection-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked card
+            cardElement.classList.add('selected');
+            
+            // Enable and show the launch button
+            const launchButton = document.getElementById('launchButton');
+            launchButton.disabled = false;
+            setTimeout(() => {
+                launchButton.classList.add('visible');
+            }, 100);
+        }
+
+        // Step 3: Launch the Debate
+        function launchDebate() {
+            // Prevent double-clicks
+            const launchButton = document.getElementById('launchButton');
+            if (launchButton.disabled) {
+                return;
+            }
+            
+            // Disable button immediately
+            launchButton.disabled = true;
+            launchButton.style.opacity = '0.5';
+            launchButton.style.cursor = 'not-allowed';
+            
+            // Hide the launcher overlay
+            document.getElementById('launcherOverlay').classList.add('hidden');
+            
+            // Show the main app
+            setTimeout(() => {
+                document.getElementById('mainApp').classList.add('visible');
+                
+                // Update header based on selection
+                updateHeader();
+                
+                // Load the appropriate agent (only once due to agentLoaded flag)
+                loadAgent();
+            }, 500);
+        }
+
+        // Update header based on selection
+        function updateHeader() {
+            const headerSubtitle = document.getElementById('headerSubtitle');
+            const headerBadge = document.getElementById('headerBadge');
+            const debateRoleDescription = document.getElementById('debateRoleDescription');
+            
+            if (selectedPerspective === 'diabetes') {
+                headerSubtitle.textContent = 'Debating FOR Diabetes Medicine';
+                headerBadge.textContent = '💊 DIABETES ADVOCATE';
+                debateRoleDescription.innerHTML = '<strong>Your Role:</strong> You are arguing FOR diabetes expansion. The agent will challenge you by advocating for MDR-TB.';
+            } else if (selectedPerspective === 'mdrtb') {
+                headerSubtitle.textContent = 'Debating FOR MDR-TB Medicine';
+                headerBadge.textContent = '🦠 MDR-TB ADVOCATE';
+                debateRoleDescription.innerHTML = '<strong>Your Role:</strong> You are arguing FOR MDR-TB commitment. The agent will challenge you by advocating for diabetes.';
+            } else if (selectedPerspective === 'freestyle') {
+                headerSubtitle.textContent = 'Advanced Strategic Dialogue';
+                headerBadge.textContent = '🎯 STRATEGIC FLEX';
+                debateRoleDescription.innerHTML = '<strong>Your Role:</strong> You are exploring multiple strategic pathways. The agent will challenge any single-option thinking and push toward portfolio strategies.';
+            }
+        }
+
+        // Load the appropriate agent based on selection
+        function loadAgent() {
+            // Prevent multiple loads
+            if (agentLoaded) {
+                console.log('Agent already loaded, skipping...');
+                return;
+            }
+            
+            const container = document.getElementById('agent-container');
+            
+            // Clear any existing content (including multiple iframes if somehow created)
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            
+            // Add loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = `
+                <div class="spinner"></div>
+                <div class="loading-text">Loading Interactive Avatar...</div>
+            `;
+            container.appendChild(loadingDiv);
+            
+            // Create single iframe
+            const iframe = document.createElement('iframe');
+            
+            // Set iframe properties
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            iframe.allowFullscreen = true;
+            
+            // Set the appropriate agent URL based on selection
+            if (selectedPerspective === 'diabetes') {
+                // HEYGEN MDR-TB ADVOCATE AGENT
+                // User argues FOR diabetes, agent argues FOR MDR-TB
+                iframe.allow = 'microphone';
+                iframe.title = 'HeyGen Streaming Avatar';
+                iframe.src = 'https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiJXYXluZV8yMDI0MDcxMSIsInByZXZpZXdJ%0D%0AbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3YzL2EzZmRiMGM2NTIwMjRmNzk5%0D%0AODRhYWVjMTFlYmYyNjk0XzM0MzUwL3ByZXZpZXdfdGFyZ2V0LndlYnAiLCJuZWVkUmVtb3ZlQmFj%0D%0Aa2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6IjUwY2UzZDM5YjM4ZTQyNjNiM2E5NjRh%0D%0AOTU0OTA3N2MxIiwidXNlcm5hbWUiOiJhNTUzNDUyYWRiYzE0YzU1YmU3MzJkYTgyMTgyZDc5OSJ9&inIFrame=1';
+                
+            } else if (selectedPerspective === 'mdrtb') {
+                // HEYGEN DIABETES ADVOCATE AGENT
+                // User argues FOR MDR-TB, agent argues FOR diabetes
+                iframe.allow = 'microphone';
+                iframe.title = 'HeyGen Streaming Avatar';
+                iframe.src = 'https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiJXYXluZV8yMDI0MDcxMSIsInByZXZpZXdJ%0D%0AbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3YzL2EzZmRiMGM2NTIwMjRmNzk5%0D%0AODRhYWVjMTFlYmYyNjk0XzM0MzUwL3ByZXZpZXdfdGFyZ2V0LndlYnAiLCJuZWVkUmVtb3ZlQmFj%0D%0Aa2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6IjBlZGZmNmI3OTA2NzQ1NDc5YjAwNDFh%0D%0AZDVlMWQwNDlkIiwidXNlcm5hbWUiOiJhNTUzNDUyYWRiYzE0YzU1YmU3MzJkYTgyMTgyZDc5OSJ9&inIFrame=1';
+                
+            } else if (selectedPerspective === 'freestyle') {
+                // HEYGEN STRATEGIC FLEXIBILITY AGENT
+                // Advanced dialogue exploring multiple pathways
+                iframe.allow = 'microphone';
+                iframe.title = 'HeyGen Streaming Avatar';
+                iframe.src = 'https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiJXYXluZV8yMDI0MDcxMSIsInByZXZpZXdJ%0D%0AbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3YzL2EzZmRiMGM2NTIwMjRmNzk5%0D%0AODRhYWVjMTFlYmYyNjk0XzM0MzUwL3ByZXZpZXdfdGFyZ2V0LndlYnAiLCJuZWVkUmVtb3ZlQmFj%0D%0Aa2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImZmZDNiYzY2ODgxZTQ0YWRiOWQ0MWYx%0D%0AY2IyZjIwMTE3IiwidXNlcm5hbWUiOiJhNTUzNDUyYWRiYzE0YzU1YmU3MzJkYTgyMTgyZDc5OSJ9&inIFrame=1';
+            }
+            
+            // Remove loading indicator when iframe loads
+            iframe.onload = function() {
+                const loading = container.querySelector('.loading');
+                if (loading) {
+                    loading.style.opacity = '0';
+                    loading.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => loading.remove(), 300);
+                }
+            };
+            
+            container.appendChild(iframe);
+            agentLoaded = true; // Mark as loaded
+            
+            // Listen for HeyGen postMessage events
+            window.addEventListener('message', function(e) {
+                if (e.origin === 'https://labs.heygen.com' && e.data && e.data.type === 'streaming-embed') {
+                    console.log('HeyGen message:', e.data.action);
+                    // HeyGen handles its own UI within the iframe
+                }
+            });
+        }
+
+        // Sidebar tab switching
+        function switchSidebar(contentId) {
+            // Hide all sidebar contents
+            document.querySelectorAll('.sidebar-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected sidebar content
+            document.getElementById(contentId).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Accordion toggle for Discussion Questions
+        function toggleQuestion(cardElement) {
+            // Toggle the expanded class on the clicked card
+            cardElement.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>
+
